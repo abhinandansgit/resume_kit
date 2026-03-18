@@ -180,6 +180,49 @@ async function viewResume(id) {
 function closeModal() {
   document.getElementById('modal').classList.add('hidden');
 }
+
+  async function resetSession() {
+  const btn = document.querySelector('.btn-reset-session');
+  btn.disabled = true;
+  btn.textContent = 'Resetting...';
+  const res = await fetch('/admin/session/reset', { method: 'POST' });
+  const data = await res.json();
+  const msg = document.getElementById('resetMsg');
+  msg.textContent = '✓ ' + data.message;
+  msg.className = 'reset-msg success';
+  msg.classList.remove('hidden');
+  btn.textContent = '↺ Reset Timer';
+  btn.disabled = false;
+  setTimeout(() => msg.classList.add('hidden'), 4000);
+}
+
+async function pollSession() {
+  const res = await fetch('/session-status');
+  const data = await res.json();
+  const badge = document.getElementById('adminTimerBadge');
+  const timerEl = document.getElementById('adminTimer');
+  const rem = data.remaining_seconds;
+  const m = String(Math.floor(rem / 60)).padStart(2, '0');
+  const s = String(rem % 60).padStart(2, '0');
+  timerEl.textContent = `${m}:${s}`;
+  if (data.expired) {
+    badge.textContent = 'EXPIRED'; badge.className = 'flag-badge expired';
+    timerEl.style.color = 'var(--red)';
+  } else if (rem <= 60) {
+    badge.textContent = 'CRITICAL'; badge.className = 'flag-badge critical';
+    timerEl.style.color = 'var(--red)';
+  } else if (rem <= 300) {
+    badge.textContent = 'WARNING'; badge.className = 'flag-badge warning';
+    timerEl.style.color = 'var(--yellow)';
+  } else {
+    badge.textContent = 'ACTIVE'; badge.className = 'flag-badge active';
+    timerEl.style.color = 'var(--green)';
+  }
+}
+
+pollSession();
+setInterval(pollSession, 1000);
+  
 </script>
 </body>
 </html>
