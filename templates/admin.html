@@ -18,6 +18,15 @@
       </nav>
     </div>
     <div class="flags-panel">
+      <div class="session-reset-block">
+  <div class="session-status-row">
+    <span class="flag-key">Session</span>
+    <span id="adminTimerBadge" class="flag-badge">Loading...</span>
+  </div>
+  <div class="admin-timer-display" id="adminTimer">--:--</div>
+  <button class="btn-reset-session" onclick="resetSession()">↺ Reset Timer</button>
+  <div id="resetMsg" class="reset-msg hidden"></div>
+</div>
       <div class="flags-title">Feature Controls</div>
       {% for key, val in flags.items() %}
       <div class="flag-row">
