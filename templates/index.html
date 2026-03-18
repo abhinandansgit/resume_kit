@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ResumeKit — Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">RESUMEKIT</div>
+      <div class="session-block">
+        <div class="session-label">Session Remaining</div>
+        <div class="timer" id="timer">20:00</div>
+        <div class="timer-track"><div class="timer-fill" id="timerFill"></div></div>
+      </div>
+      <nav class="nav">
+        <a href="/" class="nav-item active">Builder panel</a>
+        <a href="/admin" class="nav-item">Admin Panel</a>
+      </nav>
+    </div>
+    <div class="analytics-panel" id="analyticsPanel">
+      <div class="analytics-title">Resume Content Analysis</div>
+      <div class="analytics-grid">
+        <div class="analytics-item"><div class="a-val" id="aWords">0</div><div class="a-key">Words</div></div>
+        <div class="analytics-item"><div class="a-val" id="aChars">0</div><div class="a-key">Characters</div></div>
+        <div class="analytics-item"><div class="a-val" id="aLetters">0</div><div class="a-key">Letters (w/ spaces)</div></div>
+        <div class="analytics-item"><div class="a-val" id="aParas">0</div><div class="a-key">Paragraphs</div></div>
+        <div class="analytics-item full"><div class="a-val" id="aRead">~0 min</div><div class="a-key">Estimated Reading Time</div></div>
+      </div>
+      <div class="word-range" id="wordRange">
+        <div class="word-range-bar"><div class="word-range-fill" id="wordRangeFill"></div></div>
+        <div class="word-range-label">Recommended: 300–700 words</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- FORM COL -->
+    <div class="form-col">
+      <div class="col-header">
+        <h1>Build Resume</h1>
+        <div class="last-edited" id="lastEdited">Not edited yet</div>
+      </div>
+
+      <div id="sessionBanner" class="banner banner-error hidden">
+        ⏱ Resume submission time has expired.
+      </div>
+      <div id="formBanner" class="banner banner-error hidden"></div>
+
+      <!-- Personal -->
+      <div class="card">
+        <div class="card-head">Personal Information</div>
+        <div class="form-grid2">
+          <div class="field">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" id="name" placeholder="Ada Lovelace" oninput="liveUpdate()"/>
+            <div class="cap-suggest hidden" id="nameSuggest"></div>
+          </div>
+          <div class="field">
+            <label>Email <span class="req">*</span></label>
+            <input type="email" id="email" placeholder="abhi@example.com" oninput="liveUpdate()"/>
+            <div class="field-error hidden" id="emailError">Invalid email format.</div>
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input type="text" id="phone" placeholder="+91 63722 02830" oninput="liveUpdate()"/>
+            <div class="field-error hidden" id="phoneError">Invalid phone format.</div>
+          </div>
+          <div class="field">
+            <label>Date of Birth <span class="hint-label">(DD-MM-YYYY, used for password)</span></label>
+            <input type="text" id="dob" placeholder="10-12-1990" oninput="liveUpdate()"/>
+          </div>
+          <div class="field full-span">
+            <label>Professional Summary</label>
+            <textarea id="summary" rows="3" placeholder="Brief overview of your professional background..." oninput="liveUpdate()"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills -->
+      <div class="card">
+        <div class="card-head">Skills</div>
+        <div class="add-row">
+          <input type="text" id="skillInput" placeholder="e.g. Python" onkeydown="if(event.key==='Enter'){event.preventDefault();addSkill()}"/>
+          <button class="btn-add" onclick="addSkill()">+ Add</button>
+        </div>
+        <div id="dupWarn" class="banner banner-warn hidden"></div>
+        <div id="skillTags" class="tag-list"></div>
+      </div>
+
+      <!-- Experience -->
+      <div class="card">
+        <div class="card-head">Work Experience</div>
+        <div id="expList"></div>
+        <button class="btn-ghost-full" onclick="addEntry('experience')">+ Add Experience</button>
+      </div>
+
+      <!-- Education -->
+      <div class="card">
+        <div class="card-head">Education</div>
+        <div id="eduList"></div>
+        <button class="btn-ghost-full" onclick="addEntry('education')">+ Add Education</button>
+      </div>
+
+      <!-- Certifications -->
+      <div class="card">
+        <div class="card-head">Certifications &amp; Languages</div>
+        <div class="form-grid2">
+          <div class="field">
+            <label>Certifications</label>
+            <div class="add-row">
+              <input type="text" id="certInput" placeholder="IBM Certified Developer" onkeydown="if(event.key==='Enter'){event.preventDefault();addSimple('certifications','certInput')}"/>
+              <button class="btn-add" onclick="addSimple('certifications','certInput')">+ Add</button>
+            </div>
+            <div id="certTags" class="tag-list"></div>
+          </div>
+          <div class="field">
+            <label>Languages</label>
+            <div class="add-row">
+              <input type="text" id="langInput" placeholder="English (Fluent)" onkeydown="if(event.key==='Enter'){event.preventDefault();addSimple('languages','langInput')}"/>
+              <button class="btn-add" onclick="addSimple('languages','langInput')">+ Add</button>
+            </div>
+            <div id="langTags" class="tag-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warnings -->
+      <div id="wordWarn" class="banner banner-warn hidden">
+        ⚠ Warning: The recommended resume length is under 700 words.
+      </div>
+
+      <!-- Submit -->
+      <div class="action-bar">
+        <button class="btn-primary" onclick="submitResume()">Generate Resume</button>
+      </div>
+
+      <!-- Result Card -->
+      <div id="resultCard" class="result-card hidden">
+        <div class="result-id-row">
+          <span class="result-id" id="resultId"></span>
+          <span class="result-badge">Generated</span>
+        </div>
+        <div class="result-details">
+          <div class="result-row">
+            <span class="rd-label">Password</span>
+            <code class="rd-val" id="resultPassword"></code>
+          </div>
+          <div class="result-row">
+            <span class="rd-label">Expires</span>
+            <span class="rd-val" id="resultExpiry"></span>
+          </div>
+          <div class="result-row">
+            <span class="rd-label">Downloads</span>
+            <span class="rd-val" id="resultDownloads">0</span>
+          </div>
+        </div>
+        <div class="result-actions" id="resultActions"></div>
+        <div id="shareStatus" class="banner banner-success hidden"></div>
+        <div id="waSection" class="wa-section hidden">
+          <div class="wa-field">
+            <input type="text" id="waPhone" placeholder="Recipient phone (optional)"/>
+            <button class="btn-wa" onclick="shareWhatsApp()">📲 Open WhatsApp</button>
+          </div>
+          <div class="wa-note" id="waSentNote" style="display:none">
+            <span class="badge-sent">Sent</span> WhatsApp already shared — resend disabled.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW COL -->
+    <div class="preview-col">
+      <div class="col-header">
+        <h1>Live Preview</h1>
+        <div class="preview-tabs">
+          <button class="ptab active" onclick="setPreviewTab('preview',this)">Preview</button>
+          <button class="ptab" onclick="setPreviewTab('stats',this)">Analytics</button>
+        </div>
+      </div>
+
+      <div id="tabPreview" class="tab-content">
+        <div class="preview-doc" id="previewDoc">
+          <div class="pv-name" id="pvName">Your Name</div>
+          <div class="pv-contact" id="pvContact">email · phone</div>
+          <div class="pv-divider"></div>
+          <div id="pvSummaryBlock" class="pv-section hidden">
+            <div class="pv-section-title">Summary</div>
+            <div id="pvSummary" class="pv-body"></div>
+          </div>
+          <div id="pvExpBlock" class="pv-section hidden">
+            <div class="pv-section-title">Experience</div>
+            <div id="pvExp"></div>
+          </div>
+          <div id="pvEduBlock" class="pv-section hidden">
+            <div class="pv-section-title">Education</div>
+            <div id="pvEdu"></div>
+          </div>
+          <div id="pvSkillsBlock" class="pv-section hidden">
+            <div class="pv-section-title">Skills</div>
+            <div id="pvSkills" class="pv-skills-wrap"></div>
+          </div>
+          <div id="pvCertBlock" class="pv-section hidden">
+            <div class="pv-section-title">Certifications</div>
+            <div id="pvCert" class="pv-body"></div>
+          </div>
+          <div id="pvLangBlock" class="pv-section hidden">
+            <div class="pv-section-title">Languages</div>
+            <div id="pvLang" class="pv-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tabStats" class="tab-content hidden">
+        <div class="stats-grid" id="statsGrid">
+          <div class="stats-card">
+            <div class="sc-icon">📝</div>
+            <div class="sc-val" id="swWords">0</div>
+            <div class="sc-key">Words</div>
+          </div>
+          <div class="stats-card">
+            <div class="sc-icon">🔤</div>
+            <div class="sc-val" id="swChars">0</div>
+            <div class="sc-key">Characters</div>
+          </div>
+          <div class="stats-card">
+            <div class="sc-icon">📖</div>
+            <div class="sc-val" id="swRead">~0m</div>
+            <div class="sc-key">Reading Time</div>
+          </div>
+          <div class="stats-card">
+            <div class="sc-icon">📋</div>
+            <div class="sc-val" id="swParas">0</div>
+            <div class="sc-key">Paragraphs</div>
+          </div>
+          <div class="stats-card">
+            <div class="sc-icon">🎯</div>
+            <div class="sc-val" id="swSkills">0</div>
+            <div class="sc-key">Skills Listed</div>
+          </div>
+          <div class="stats-card">
+            <div class="sc-icon">💼</div>
+            <div class="sc-val" id="swExp">0</div>
+            <div class="sc-key">Experience Entries</div>
+          </div>
+        </div>
+        <div class="density-bar-wrap">
+          <div class="db-label">Content Density</div>
+          <div class="density-bar">
+            <div class="density-fill" id="densityFill"></div>
+            <div class="density-markers">
+              <span>0</span><span>300</span><span>700</span><span>1000+</span>
+            </div>
+          </div>
+          <div class="density-status" id="densityStatus">Start writing to see analysis</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

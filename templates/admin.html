@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ResumeKit — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">RESUMEKIT</div>
+      <nav class="nav">
+        <a href="/" class="nav-item">Builder</a>
+        <a href="/admin" class="nav-item active">Admin Panel</a>
+      </nav>
+    </div>
+    <div class="flags-panel">
+      <div class="flags-title">Feature Controls</div>
+      {% for key, val in flags.items() %}
+      <div class="flag-row">
+        <span class="flag-key">{{ key.replace('_',' ').title() }}</span>
+        <label class="toggle">
+          <input type="checkbox" data-key="{{ key }}" {% if val %}checked{% endif %} onchange="toggleFlag('{{ key }}', this.checked)"/>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <div class="main admin-main">
+    <div class="admin-tabs">
+      <button class="atab active" onclick="showTab('resumes',this)">Resumes ({{ resumes|length }})</button>
+      <button class="atab" onclick="showTab('shares',this)">Share History ({{ shares|length }})</button>
+      <button class="atab" onclick="showTab('actlog',this)">Activity Log ({{ logs|length }})</button>
+    </div>
+
+    <!-- Resumes Tab -->
+    <div id="tab-resumes" class="admin-tab-content">
+      {% if resumes %}
+      <table class="atable">
+        <thead>
+          <tr>
+            <th>Resume ID</th><th>Name</th><th>Email</th><th>Phone</th>
+            <th>Downloads</th><th>Created</th><th>Expires</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resumes %}
+          <tr id="row-{{ r.id }}">
+            <td><code>{{ r.id }}</code></td>
+            <td>
+              <span class="editable-name" id="name-{{ r.id }}">{{ r.name }}</span>
+            </td>
+            <td>{{ r.email }}</td>
+            <td>{{ r.phone or '—' }}</td>
+            <td class="center">
+              <span class="dl-badge">{{ r.download_count }}</span>
+            </td>
+            <td class="muted-cell">{{ r.created_at[:16].replace('T',' ') }}</td>
+            <td class="muted-cell">{{ r.expires_at[:16].replace('T',' ') }}</td>
+            <td>
+              <div class="row-actions">
+                <button class="btn-ghost small" onclick="viewResume('{{ r.id }}')">View</button>
+                <button class="btn-danger small" onclick="deleteResume('{{ r.id }}')">Delete</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No resumes yet. <a href="/">Create one →</a></div>
+      {% endif %}
+    </div>
+
+    <!-- Share History Tab -->
+    <div id="tab-shares" class="admin-tab-content hidden">
+      {% if shares %}
+      <table class="atable">
+        <thead>
+          <tr><th>Resume ID</th><th>Method</th><th>Recipient</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody>
+          {% for s in shares %}
+          <tr>
+            <td><code>{{ s.resume_id }}</code></td>
+            <td><span class="method-badge method-{{ s.method }}">{{ s.method }}</span></td>
+            <td>{{ s.recipient }}</td>
+            <td class="muted-cell">{{ s.timestamp[:16].replace('T',' ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No share history yet.</div>
+      {% endif %}
+    </div>
+
+    <!-- Activity Log Tab -->
+    <div id="tab-actlog" class="admin-tab-content hidden">
+      {% if logs %}
+      <table class="atable">
+        <thead>
+          <tr><th>Resume ID</th><th>Action</th><th>Detail</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody>
+          {% for l in logs %}
+          <tr>
+            <td><code>{{ l.resume_id or '—' }}</code></td>
+            <td><span class="action-badge action-{{ l.action.split('_')[0] }}">{{ l.action.replace('_',' ') }}</span></td>
+            <td class="muted-cell">{{ l.detail or '—' }}</td>
+            <td class="muted-cell">{{ l.timestamp[:16].replace('T',' ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No activity logs yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Resume View Modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="modalTitle">Resume</span>
+      <button onclick="closeModal()">✕</button>
+    </div>
+    <pre id="modalBody" class="modal-body"></pre>
+  </div>
+</div>
+
+<script>
+function showTab(name, btn) {
+  document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  btn.classList.add('active');
+}
+
+async function toggleFlag(key, val) {
+  await fetch('/admin/flags', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({[key]: val})
+  });
+}
+
+async function deleteResume(id) {
+  if (!confirm(`Delete ${id}? This cannot be undone.`)) return;
+  const res = await fetch(`/resume/${id}`, {method: 'DELETE'});
+  if (res.ok) {
+    document.getElementById(`row-${id}`)?.remove();
+  }
+}
+
+async function viewResume(id) {
+  const res = await fetch(`/resume/${id}/stats`);
+  const data = await res.json();
+  document.getElementById('modalTitle').textContent = id;
+  document.getElementById('modalBody').textContent = JSON.stringify(data, null, 2);
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+}
+</script>
+</body>
+</html>
