@@ -10,15 +10,16 @@ from utils import (
     validate_phone, auto_capitalize, format_display_time,
 )
 
-SESSION_START = datetime.utcnow()
+session_state = {"start": datetime.utcnow()}
 SESSION_LIMIT_MINUTES = 20
 
 app = Flask(__name__)
 init_db()
 
 
+
 def session_expired():
-    return (datetime.utcnow() - SESSION_START).total_seconds() > SESSION_LIMIT_MINUTES * 60
+    return (datetime.utcnow() - session_state["start"]).total_seconds() > SESSION_LIMIT_MINUTES * 60
 
 
 def log_action(conn, resume_id, action, detail=None):
@@ -303,10 +304,18 @@ def share_whatsapp(resume_id):
 
 @app.route("/session-status")
 def session_status():
-    elapsed = (datetime.utcnow() - SESSION_START).total_seconds()
+    elapsed = (datetime.utcnow() - session_state["start"]).total_seconds()
     remaining = max(0, SESSION_LIMIT_MINUTES * 60 - elapsed)
     return jsonify({"expired": session_expired(), "remaining_seconds": int(remaining)})
 
+
+@app.route("/admin/session/reset", methods=["POST"])
+def reset_session():
+    session_state["start"] = datetime.utcnow()
+    with get_conn() as conn:
+        log_action(conn, None, "session_reset", "Admin reset session timer")
+        conn.commit()
+    return jsonify({"message": "Session timer reset. 20 minutes restarted."})
 
 @app.route("/resume/<resume_id>/stats")
 def resume_stats(resume_id):
