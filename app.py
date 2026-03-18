@@ -473,6 +473,6 @@ def generate_pdf(resume: dict, password: str = None) -> bytes:
         doc.build(story)
         return buffer.getvalue()
 
-
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    import os
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
